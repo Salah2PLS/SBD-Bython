@@ -116,6 +116,12 @@ def parse_file(filepath, add_true_line, filename_prefix, outputname=None, change
 
     # Fix indentation
     infile_str_indented = ""
+    
+    #------------------------------------------------------------------------------------------
+    # New variable to track if we're inside a raw string
+    inside_raw_string = False
+    # -----------------------------------------------------------------------------------------
+    
     for line in infile_str_raw.split("\n"):
         # Search for comments, and remove for now. Re-add them before writing to
         # result string
@@ -137,6 +143,25 @@ def parse_file(filepath, add_true_line, filename_prefix, outputname=None, change
         if line.strip() in ('\n', '\r\n', ''):
             infile_str_indented += indentation_level*indentation_sign + add_comment.lstrip() + "\n"
             continue
+        
+        # ------------------------------------------------------------------------------------------------------
+        # Detect raw strings (r" or r') in the line, ignoring them for {} replacement
+        raw_string_start = re.search(r'(r["\']).*', line)
+
+        # If a raw string is detected, turn on the flag to skip brace processing
+        if raw_string_start is not None:
+        inside_raw_string = True
+
+        # Handle closing of raw strings
+        if inside_raw_string:
+            raw_string_end = re.search(r'["\']', line)
+            if raw_string_end is not None:
+                inside_raw_string = False  # Turn off the flag when the string ends
+            # Add the line directly without modifications
+            infile_str_indented += line + "\n"
+            continue  # Skip brace replacement for this line
+            
+        # ------------------------------------------------------------------------------------------------------
 
         # remove existing whitespace:
         line = line.lstrip()
@@ -155,10 +180,13 @@ def parse_file(filepath, add_true_line, filename_prefix, outputname=None, change
             if i == "{":
                 indentation_level += 1
 
-        # Replace { with : and remove }
-        line = re.sub(r"[\t ]*{[ \t]*", ":", line)
-        line = re.sub(r"}[ \t]*", "", line)
-        line = re.sub(r"\n:", ":", line)
+        # -------------------------------------------------------------------------
+        # Skip replacing {} if inside a raw string
+        if not inside_raw_string:
+            # Replace { with : and remove }
+            line = re.sub(r"[\t ]*{[ \t]*", ":", line)
+            line = re.sub(r"}[ \t]*", "", line)
+            line = re.sub(r"\n:", ":", line)
 
         infile_str_indented += line + add_comment + "\n"
 
