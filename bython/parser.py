@@ -150,7 +150,7 @@ def parse_file(filepath, add_true_line, filename_prefix, outputname=None, change
 
         # If a raw string is detected, turn on the flag to skip brace processing
         if raw_string_start is not None:
-        inside_raw_string = True
+            inside_raw_string = True
 
         # Handle closing of raw strings
         if inside_raw_string:
